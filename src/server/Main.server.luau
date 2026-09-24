@@ -66,6 +66,7 @@ local function sendHome(player: Player, character: Model)
 	end
 	task.wait() -- let Roblox finish placing the character before we move it
 	character:PivotTo(tycoon:spawnCFrame())
+	tycoon:applyWalkSpeed()
 end
 
 local function onPlayerAdded(player: Player)
@@ -100,7 +101,7 @@ local function onPlayerAdded(player: Player)
 	task.delay(3, function()
 		local message = if #purchased > 0
 			then "Welcome back! Your gas station is ready."
-			else "Welcome! Step on the green button to build your first pump."
+			else "Welcome! Step on the green button to build your first pump, then serve cars with E."
 		Remotes.Notify:FireClient(player, message)
 	end)
 end

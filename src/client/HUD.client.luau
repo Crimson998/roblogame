@@ -1,9 +1,11 @@
--- On-screen cash counter and pop-up messages from the server.
+-- On-screen cash counter, streak/stock/rebirth info, next goal, and pop-up messages.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
-local Format = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Format"))
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
+local Format = require(Shared:WaitForChild("Format"))
 
 local player = Players.LocalPlayer
 local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify")
@@ -47,6 +49,22 @@ local cashLabel = text({
 	TextColor3 = Color3.fromRGB(90, 255, 120),
 }, panel)
 
+local infoLabel = text({
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 70),
+	Size = UDim2.fromOffset(420, 24),
+	TextStrokeTransparency = 0.3,
+	RichText = true,
+}, gui)
+
+local goalLabel = text({
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 96),
+	Size = UDim2.fromOffset(420, 22),
+	TextColor3 = Color3.fromRGB(255, 220, 120),
+	TextStrokeTransparency = 0.3,
+}, gui)
+
 local toast = text({
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.fromScale(0.5, 0.25),
@@ -58,6 +76,7 @@ local toast = text({
 -- Cash counter that pops when it changes
 local leaderstats = player:WaitForChild("leaderstats")
 local cash = leaderstats:WaitForChild("Cash") :: IntValue
+local rebirths = leaderstats:WaitForChild("Rebirths") :: IntValue
 
 local function refresh()
 	cashLabel.Text = Format.money(cash.Value)
@@ -66,6 +85,33 @@ local function refresh()
 end
 cash.Changed:Connect(refresh)
 refresh()
+
+-- Streak, store stock and rebirth boost, shown only when they matter
+local function refreshInfo()
+	local parts = {}
+	local streak = player:GetAttribute("Streak") or 0
+	if streak > 0 then
+		local bonus = math.min(streak * Config.StreakBonus, Config.MaxStreakBonus) * 100
+		table.insert(parts, `<font color="#ffb347">Streak {streak} (+{math.floor(bonus)}%)</font>`)
+	end
+	local stock = player:GetAttribute("Stock")
+	if stock ~= nil then
+		local color = if stock > 0 then "#9fe8ff" else "#ff6b6b"
+		local message = if stock > 0 then `Store stock: {stock}` else "Store empty! Restock it"
+		table.insert(parts, `<font color="{color}">{message}</font>`)
+	end
+	if rebirths.Value > 0 then
+		local multiplier = 1 + rebirths.Value * Config.RebirthBonus
+		table.insert(parts, `<font color="#d49bff">Rebirth x{multiplier}</font>`)
+	end
+	infoLabel.Text = table.concat(parts, "   ")
+	goalLabel.Text = player:GetAttribute("Goal") or ""
+end
+player:GetAttributeChangedSignal("Streak"):Connect(refreshInfo)
+player:GetAttributeChangedSignal("Stock"):Connect(refreshInfo)
+player:GetAttributeChangedSignal("Goal"):Connect(refreshInfo)
+rebirths.Changed:Connect(refreshInfo)
+refreshInfo()
 
 -- Pop-up messages from the server
 local toastId = 0

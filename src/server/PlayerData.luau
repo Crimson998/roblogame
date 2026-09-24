@@ -1,8 +1,10 @@
--- Creates each player's Cash leaderstat and saves/loads it (plus what they've bought) with DataStores.
+-- Creates each player's leaderstats and saves/loads them (plus what they've bought) with DataStores.
 local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+
+local STATS = { "Cash", "Rebirths" } -- leaderboard shows them in this order
 
 local PlayerData = {}
 
@@ -29,9 +31,11 @@ end
 function PlayerData.load(player: Player): { string }
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
-	local cash = Instance.new("IntValue")
-	cash.Name = "Cash"
-	cash.Parent = leaderstats
+	for _, name in STATS do
+		local stat = Instance.new("IntValue")
+		stat.Name = name
+		stat.Parent = leaderstats
+	end
 
 	local purchased = {}
 	if store then
@@ -39,8 +43,10 @@ function PlayerData.load(player: Player): { string }
 		if ok then
 			loaded[player] = true
 			if type(saved) == "table" then
-				if type(saved.Cash) == "number" then
-					cash.Value = saved.Cash
+				for _, name in STATS do
+					if type(saved[name]) == "number" then
+						(leaderstats:FindFirstChild(name) :: IntValue).Value = saved[name]
+					end
 				end
 				if type(saved.Purchased) == "table" then
 					for _, id in saved.Purchased do
@@ -64,11 +70,11 @@ function PlayerData.save(player: Player, purchased: { string })
 		return
 	end
 	local leaderstats = player:FindFirstChild("leaderstats")
-	local cash = leaderstats and leaderstats:FindFirstChild("Cash") :: IntValue?
-	local data = {
-		Cash = if cash then cash.Value else 0,
-		Purchased = purchased,
-	}
+	local data: { [string]: any } = { Purchased = purchased }
+	for _, name in STATS do
+		local stat = leaderstats and leaderstats:FindFirstChild(name) :: IntValue?
+		data[name] = if stat then stat.Value else 0
+	end
 	local ok, err = pcall(store.SetAsync, store, keyFor(player), data)
 	if not ok then
 		warn("[PlayerData] Failed to save", player.Name, err)

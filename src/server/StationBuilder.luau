@@ -7,6 +7,9 @@ StationBuilder.PUMP_Z = 17
 StationBuilder.ROAD_Z = 38
 StationBuilder.BACK_LANE_Z = 4
 StationBuilder.EXIT_X = 36
+StationBuilder.DELIVERY_PAD = Vector3.new(42, 0, -8) -- boxes for the store show up here
+StationBuilder.REBIRTH_SPOT = Vector3.new(-22, 0, -12)
+StationBuilder.TRASH_AREA = { minX = -28, maxX = 28, minZ = -6, maxZ = 30 }
 
 local COLORS = {
 	Concrete = Color3.fromRGB(190, 190, 185),
@@ -158,8 +161,8 @@ StationBuilder.items = {
 	end,
 
 	sign = function(parent: Instance, origin: CFrame)
-		block(parent, origin * CFrame.new(-42, 11, 30), Vector3.new(1, 22, 1), COLORS.Gray, Enum.Material.Metal)
-		local board = block(parent, origin * CFrame.new(-42, 20, 30.2), Vector3.new(10, 7, 0.8), COLORS.Red)
+		block(parent, origin * CFrame.new(-42, 11, 31), Vector3.new(1, 22, 1), COLORS.Gray, Enum.Material.Metal)
+		local board = block(parent, origin * CFrame.new(-42, 20, 31.2), Vector3.new(10, 7, 0.8), COLORS.Red)
 		signText(board, "GAS\n$3.99", COLORS.White)
 	end,
 
@@ -168,9 +171,14 @@ StationBuilder.items = {
 		block(parent, origin * CFrame.new(0, 12.5, -30), Vector3.new(37, 1, 21), COLORS.Red)
 		local window = block(parent, origin * CFrame.new(-4, 4, -19.9), Vector3.new(20, 6, 0.2), COLORS.Blue, Enum.Material.Glass)
 		window.Transparency = 0.4
-		block(parent, origin * CFrame.new(12, 4, -19.9), Vector3.new(5, 8, 0.2), COLORS.Dark)
+		block(parent, origin * CFrame.new(12, 4, -19.9), Vector3.new(5, 8, 0.2), COLORS.Dark).Name = "StoreDoor"
 		local sign = block(parent, origin * CFrame.new(0, 10, -19.7), Vector3.new(16, 3, 0.4), COLORS.White)
 		signText(sign, "QUICK MART", COLORS.Red)
+
+		local pad = StationBuilder.DELIVERY_PAD
+		local deliveryPad =
+			block(parent, origin * CFrame.new(pad + Vector3.new(0, 0.1, 0)), Vector3.new(9, 0.2, 5), COLORS.Yellow)
+		StationBuilder.billboard(deliveryPad, "Deliveries", 5)
 	end,
 
 	snacks = function(parent: Instance, origin: CFrame)
@@ -217,7 +225,7 @@ StationBuilder.items = {
 function StationBuilder.buttonPosition(index: number): Vector3
 	local column = (index - 1) % 2
 	local row = math.floor((index - 1) / 2)
-	return Vector3.new(-40 + column * 8, 0.2, 24 - row * 6.5)
+	return Vector3.new(-40 + column * 7, 0.2, 27 - row * 6)
 end
 
 return StationBuilder

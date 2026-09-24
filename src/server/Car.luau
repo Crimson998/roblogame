@@ -88,7 +88,7 @@ function Car.driveTo(self: Car, target: Vector3): boolean
 	return self.body.Parent ~= nil
 end
 
-function Car.popup(self: Car, text: string)
+function Car.popup(self: Car, text: string, color: Color3?)
 	local gui = Instance.new("BillboardGui")
 	gui.Size = UDim2.fromOffset(120, 40)
 	gui.StudsOffset = Vector3.new(0, 4, 0)
@@ -98,11 +98,62 @@ function Car.popup(self: Car, text: string)
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.FredokaOne
 	label.TextScaled = true
-	label.TextColor3 = Color3.fromRGB(90, 255, 120)
+	label.TextColor3 = color or Color3.fromRGB(90, 255, 120)
 	label.TextStrokeTransparency = 0.2
 	label.Text = text
 	label.Parent = gui
 	gui.Parent = self.body
+end
+
+-- A "Needs gas!" label with a bar that drains while the customer waits
+function Car.showPatience(self: Car)
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "Patience"
+	gui.Size = UDim2.fromOffset(140, 44)
+	gui.StudsOffset = Vector3.new(0, 5, 0)
+	gui.MaxDistance = 100
+	gui.AlwaysOnTop = true
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, 0, 0, 26)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.FredokaOne
+	label.TextScaled = true
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.TextStrokeTransparency = 0.2
+	label.Text = "Needs gas!"
+	label.Parent = gui
+
+	local back = Instance.new("Frame")
+	back.Position = UDim2.fromOffset(10, 30)
+	back.Size = UDim2.new(1, -20, 0, 10)
+	back.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	back.Parent = gui
+
+	local fill = Instance.new("Frame")
+	fill.Name = "Fill"
+	fill.Size = UDim2.fromScale(1, 1)
+	fill.BorderSizePixel = 0
+	fill.BackgroundColor3 = Color3.fromRGB(90, 220, 90)
+	fill.Parent = back
+
+	gui.Parent = self.body
+end
+
+function Car.setPatience(self: Car, fraction: number)
+	local gui = self.body:FindFirstChild("Patience")
+	local fill = gui and gui:FindFirstChild("Fill", true) :: Frame?
+	if fill then
+		fill.Size = UDim2.fromScale(fraction, 1)
+		fill.BackgroundColor3 = Color3.fromRGB(230, 60, 60):Lerp(Color3.fromRGB(90, 220, 90), fraction)
+	end
+end
+
+function Car.hidePatience(self: Car)
+	local gui = self.body:FindFirstChild("Patience")
+	if gui then
+		gui:Destroy()
+	end
 end
 
 function Car.destroy(self: Car)
