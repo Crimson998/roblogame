@@ -1,10 +1,8 @@
--- Creates each player's leaderstats and saves/loads them with DataStoreService.
+-- Creates each player's Cash leaderstat and saves/loads it (plus what they've bought) with DataStores.
 local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
-
-local STATS = { "Stage", "Coins", "Wins" } -- leaderboard shows them in this order
 
 local PlayerData = {}
 
@@ -27,28 +25,28 @@ local function keyFor(player: Player): string
 	return "player_" .. player.UserId
 end
 
-function PlayerData.getStat(player: Player, name: string): IntValue?
-	local leaderstats = player:FindFirstChild("leaderstats")
-	return leaderstats and leaderstats:FindFirstChild(name) :: IntValue?
-end
-
-function PlayerData.load(player: Player)
+-- Creates leaderstats and returns the list of item ids the player had bought
+function PlayerData.load(player: Player): { string }
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
-	for _, name in STATS do
-		local stat = Instance.new("IntValue")
-		stat.Name = name
-		stat.Parent = leaderstats
-	end
+	local cash = Instance.new("IntValue")
+	cash.Name = "Cash"
+	cash.Parent = leaderstats
 
+	local purchased = {}
 	if store then
 		local ok, saved = pcall(store.GetAsync, store, keyFor(player))
 		if ok then
 			loaded[player] = true
 			if type(saved) == "table" then
-				for _, name in STATS do
-					if type(saved[name]) == "number" then
-						(leaderstats:FindFirstChild(name) :: IntValue).Value = saved[name]
+				if type(saved.Cash) == "number" then
+					cash.Value = saved.Cash
+				end
+				if type(saved.Purchased) == "table" then
+					for _, id in saved.Purchased do
+						if type(id) == "string" then
+							table.insert(purchased, id)
+						end
 					end
 				end
 			end
@@ -58,25 +56,26 @@ function PlayerData.load(player: Player)
 	end
 
 	leaderstats.Parent = player
+	return purchased
 end
 
-function PlayerData.save(player: Player)
+function PlayerData.save(player: Player, purchased: { string })
 	if not (store and loaded[player]) then
 		return
 	end
-	local data = {}
-	for _, name in STATS do
-		local stat = PlayerData.getStat(player, name)
-		data[name] = stat and stat.Value or 0
-	end
+	local leaderstats = player:FindFirstChild("leaderstats")
+	local cash = leaderstats and leaderstats:FindFirstChild("Cash") :: IntValue?
+	local data = {
+		Cash = if cash then cash.Value else 0,
+		Purchased = purchased,
+	}
 	local ok, err = pcall(store.SetAsync, store, keyFor(player), data)
 	if not ok then
 		warn("[PlayerData] Failed to save", player.Name, err)
 	end
 end
 
-function PlayerData.release(player: Player)
-	PlayerData.save(player)
+function PlayerData.forget(player: Player)
 	loaded[player] = nil
 end
 
